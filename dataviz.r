@@ -1,2 +1,5 @@
-library(ggplot2,av)
-raw_pcm <- read_audio_bin("/home/gnix/Music/Mort Garson - Mother Earth's Plantasia/Mort Garson - Mother Earth's Plantasia - 01-05 Concerto for Philodendron & Pothos.flac")
+library(av)
+# load and normalize pcm data to match that of python file
+df <- read.csv("data/divinity_audio_sample_data.csv")
+
+plot(df$Time, df$Amplitude)

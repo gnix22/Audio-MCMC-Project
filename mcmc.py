@@ -1,9 +1,12 @@
 import numpy as np
+import pandas as pd
 import librosa as lb
 import matplotlib.pyplot as plt
 import scipy
 # load audio sample, None keeps the original sample rate, 22.5kHz was chosen in this case for less computational burden.
-data, sample_rate = lb.load("/home/gnix/Music/Mort Garson - Mother Earth's Plantasia/Mort Garson - Mother Earth's Plantasia - 01-05 Concerto for Philodendron & Pothos.flac", sr=11250, duration=0.30, offset=5.0) # 30s clip, 5s in
+data, sample_rate = lb.load("data/01 - Divinity.flac", sr=11250, duration=1.0) # 30s clip, 5s in
+sample = lb.display.waveshow(data, sr=sample_rate)
+
 ## creation of mcmc using Metropolis-Hastings
 # here I will be using a Laplace distribution, as that seems to be the general consensus when it comes to sparse data. 
 # all credit for most of the code goes to https://github.com/Joseph94m/MCMC/blob/master/MCMC.ipynb
@@ -49,32 +52,32 @@ def metropolis_hastings(data, initial_params, n_samples):
         samples.append(theta_current)
     print(f"Acceptance rate: {accepted / n_samples:.2%}")
     return np.array(samples)
-samples = metropolis_hastings(
-    data=data,
-    initial_params=[0.0, 1.0],  # initial guess for [mu, b]
-    n_samples=10000
-)
+#samples = metropolis_hastings(
+#    data=data,
+#    initial_params=[0.0, 1.0],  # initial guess for [mu, b]
+#    n_samples=10000
+#)
 
-mu_samples = samples[:, 0]
-b_samples = samples[:, 1]
-print(f"Estimated mu: {mu_samples.mean():.4f} ± {mu_samples.std():.4f}")
-print(f"Estimated b:  {b_samples.mean():.4f} ± {b_samples.std():.4f}\n")
+#mu_samples = samples[:, 0]
+#b_samples = samples[:, 1]
+#print(f"Estimated mu: {mu_samples.mean():.4f} ± {mu_samples.std():.4f}")
+#print(f"Estimated b:  {b_samples.mean():.4f} ± {b_samples.std():.4f}\n")
 
 # if librosa waveshow provides object adaptive.waveplot, and that provides y (audio time series), and times,
 # should be able to assign time values separate and use them for both plots' x-axes.
-original_waveplot = lb.display.waveshow(data, sr=sample_rate)
-waveplot_times = original_waveplot.times
-original_waveplot_samples = original_waveplot.samples
-pred_laplace = scipy.stats.laplace.pdf(waveplot_times,mu_samples.mean(), b_samples.mean())
+#original_waveplot = lb.display.waveshow(data, sr=sample_rate)
+#waveplot_times = original_waveplot.times
+#original_waveplot_samples = original_waveplot.samples
+#pred_laplace = scipy.stats.laplace.pdf(waveplot_times,mu_samples.mean(), b_samples.mean())
 #print(original_waveplot_samples.shape)
+
 #print(sampled_waveplot.shape)
 # figure our plotting issues.
 # Create the plot
-plt.figure(figsize=(10, 4))
-plt.plot(original_waveplot_samples, waveplot_times)
-lb.display.waveshow(data, sr=sample_rate)
-plt.plot(pred_laplace, waveplot_times)
-plt.title('Waveform')
-plt.xlabel('Time (s)')
-plt.ylabel('Amplitude')
-plt.show()
+#plt.figure(figsize=(10, 4))
+#plt.plot(original_waveplot_samples, waveplot_times)
+#plt.plot(pred_laplace, waveplot_times)
+#plt.title('Waveform')
+#plt.xlabel('Time (s)')
+#plt.ylabel('Amplitude')
+#plt.show()
