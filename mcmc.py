@@ -3,16 +3,18 @@ import pandas as pd
 import librosa as lb
 import matplotlib.pyplot as plt
 import scipy
-# load audio sample, None keeps the original sample rate, 22.5kHz was chosen in this case for less computational burden.
-data, sample_rate = lb.load("data/01 - Divinity.flac", sr=11250, duration=1.0) # 30s clip, 5s in
-sample = lb.display.waveshow(data, sr=sample_rate)
+import random
+random.seed(42)
+# load audio sample, None keeps the original sample rate
+data, sample_rate = lb.load("data/01 - Divinity.flac", sr=11250, duration=0.25) # fourth of a second clip @ 11.25khz
+#sample = lb.display.waveshow(data, sr=sample_rate)
 
 ## creation of mcmc using Metropolis-Hastings
 # here I will be using a Laplace distribution, as that seems to be the general consensus when it comes to sparse data. 
 # all credit for most of the code goes to https://github.com/Joseph94m/MCMC/blob/master/MCMC.ipynb
 # create the proposal_distribution that determines the parameter step sizes that our parameters will explore within the parameter space.
-proposal_distribution = lambda theta: [np.random.normal(theta[0],0.1), # new mu proposal
-                                       np.random.normal(theta[1],0.05)] # slightly less for b since b is sensitive in laplacian
+proposal_distribution = lambda theta: [np.random.normal(theta[0],0.5), # new mu proposal
+                                       np.random.normal(theta[1],0.01)] # slightly less for b since b is sensitive in laplacian
 # the prior forms prior assumptions that help with the uncertainty that we have about our parameter space.
 def log_prior(theta):
     mu, b = theta[0], theta[1]
@@ -38,8 +40,11 @@ def acceptance(theta, theta_new):
         return (np.log(accept) < (theta_new - theta))  # staying in log space throughout
 def metropolis_hastings(data, initial_params, n_samples):
     theta_current = initial_params
-    samples = [theta_current]
-    accepted = 0
+    samples = [theta_current] # set initial parameters as we assume they are accepted in the
+                              # list of accepted samples 
+    num_accepted = 0
+    accepted_samples = []
+    rejected_samples = []
     for _ in range(n_samples):
         theta_new = proposal_distribution(theta_current)
         # evaluate log posteriors
@@ -48,36 +53,43 @@ def metropolis_hastings(data, initial_params, n_samples):
         # accept or reject
         if acceptance(current_log_post, new_log_post):
             theta_current = theta_new
-            accepted += 1
+            #accepted_samples.append(theta_current)
+            num_accepted += 1
+        # commented out is two different implementations of similar processes
+        # seems like researchers typically append all (rejection/acception) to same list.
+        # straight lines denote rejections as no new movement is occuring.
+        #else:
+        #    rejected_samples.append(theta_new)
         samples.append(theta_current)
-    print(f"Acceptance rate: {accepted / n_samples:.2%}")
-    return np.array(samples)
-#samples = metropolis_hastings(
-#    data=data,
-#    initial_params=[0.0, 1.0],  # initial guess for [mu, b]
-#    n_samples=10000
-#)
+    print(f"Acceptance rate: {num_accepted / n_samples:.2%}")
+    return np.array(samples) #np.array(rejected_samples)
+samples = metropolis_hastings(
+    data=data,
+    initial_params=[0.0, 1.0],  # initial guess for [mu, b]
+    n_samples=10000
+)
 
-#mu_samples = samples[:, 0]
-#b_samples = samples[:, 1]
-#print(f"Estimated mu: {mu_samples.mean():.4f} ± {mu_samples.std():.4f}")
-#print(f"Estimated b:  {b_samples.mean():.4f} ± {b_samples.std():.4f}\n")
+accepted_mu_samples = samples[:,0]
+accepted_b_samples = samples[:,1]
+#rejected_mu_samples = rejected_samples[:,0]
+#rejected_b_samples = rejected_samples[:,1]
 
-# if librosa waveshow provides object adaptive.waveplot, and that provides y (audio time series), and times,
-# should be able to assign time values separate and use them for both plots' x-axes.
-#original_waveplot = lb.display.waveshow(data, sr=sample_rate)
-#waveplot_times = original_waveplot.times
-#original_waveplot_samples = original_waveplot.samples
-#pred_laplace = scipy.stats.laplace.pdf(waveplot_times,mu_samples.mean(), b_samples.mean())
-#print(original_waveplot_samples.shape)
+print(f"Estimated mu: {accepted_mu_samples.mean():.4f} ± {accepted_mu_samples.std():.4f}")
+print(f"Estimated b:  {accepted_b_samples.mean():.4f} ± {accepted_b_samples.std():.4f}\n")
+print(f"shape of accepted_mu: {len(accepted_mu_samples)}\n")
+#print(f"shape of rejected_mu: {len(rejected_mu_samples)}\n")
+# plot accepted/rejected samples for each parameter
+fig = plt.figure(figsize=(10,10))
+ax = fig.add_subplot(1,1,1)
 
-#print(sampled_waveplot.shape)
-# figure our plotting issues.
-# Create the plot
-#plt.figure(figsize=(10, 4))
-#plt.plot(original_waveplot_samples, waveplot_times)
-#plt.plot(pred_laplace, waveplot_times)
-#plt.title('Waveform')
-#plt.xlabel('Time (s)')
-#plt.ylabel('Amplitude')
-#plt.show()
+#ax.plot(rejected_mu_samples[0:50], 'rx', label='Rejected mu',alpha=0.5)
+#ax.plot(rejected_b_samples[0:50], 'yx', label='Rejected b',alpha=0.5)
+ax.plot(accepted_mu_samples[0:50], 'b.', label='Accepted mu',alpha=0.5)
+ax.plot(accepted_b_samples[0:50], 'g.', label='Accepted b',alpha=0.5)
+ax.set_xlabel("Iteration")
+ax.set_ylabel("$sigma$")
+ax.set_title("Figure 2: MCMC sampling for $sigma$ with Metropolis-Hastings. First 50 samples are shown.")
+ax.grid()
+ax.legend()
+fig.tight_layout()
+plt.show()
