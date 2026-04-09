@@ -1,0 +1,52 @@
+\documentclass[11pt]{article}
+\usepackage{graphicx} % Use this package to include images
+\usepackage{amsmath} % A library of many standard math expressions
+\usepackage[margin=1in]{geometry}% Sets 1in margins.
+\usepackage{fancyhdr} % Creates headers and footers
+\usepackage{enumerate}  %These two package give custom labels to a list
+\usepackage{enumitem}
+\usepackage{amssymb}
+\usepackage{amsthm} % for theorem style environments for question and answers for readablity
+\usepackage{titlesec}
+\usepackage[backend=biber, style=numeric]{biblatex}
+\addbibresource{biblio.bib}
+% Customize section font size
+\titleformat*{\section}{\fontsize{14pt}{16pt}\bfseries\selectfont}
+% Customize subsection font size
+\titleformat*{\subsection}{\fontsize{12pt}{14pt}\bfseries\selectfont}
+\titlespacing*{\section}{0pt}{1ex}{0.5ex}
+\titlespacing*{\subsection}{0pt}{0.8ex}{0.4ex}
+\newtheorem*{thm}{Theorem}
+\theoremstyle{definition}
+\newtheorem*{q}{Question}
+\newtheorem*{ans}{Answer}
+\title{M541: Stocastic Processes - MCMC Exploration Using Audio}
+\author{Garrett Nix}
+\date{\today}
+\begin{document}
+\maketitle
+\vspace{-2em}  % Remove space after title block
+\section{Introduction}
+It is no surprise to those in the larger study of statistics, that the dominating approach is that of the frequentist. However, there is has been a rise in popularity of the lesser used Bayesian approach, where the need for describing and analyzing complex data has become increasing relevant in fields such as medicine and artificial intelligence. Hence, knowledge of this approach becomes more appropriate for students to gain an understanding of before going into industrial fields or academia. This is where the following exploration of a specific concept in Bayesian statistics arises from. For the Fall semester of 2026, I had the opportunity to take a graduate level course in stochastic processes. Many of the concepts covered in the course range from various Markovian processes, to an introduction into Brownian motion. A particular concept that we were afforded to study on our own was that of Markov Chain Monte Carlo (MCMC). This markup provides a summary of some introductory material that one who might self-study this in an undergraduate degree might come across. The postceding sections will provide an introduction into the theory of MCMC, and will then delve into an exploration of an implementation of the Metropolis-Hastings algorithm using audio data sampled from a musical piece. The findings will then briefly be discussed.
+
+\section{Markov Chain Monte Carlo}
+Before expressing the formulation of MCMC, a look into the works of Bayes and Ulam are needed in order to understand the evolution into the methods seen in Bayesian statistics in the modern era. That is, these works are the foundational stepping stones that provide a path into what is now the Monte Carlo Method. Generally speaking, Monte Carlo methods were introduced during World War II in the Los Alamos National Laboratory, where these methods would later be used to form the Metropolis algorithm by the early 1950s \cite{Robert_2011}. Now, jumping backwards some 210 years prior, Bayes' first developed what would later become a published theorem, used in all of Bayesian statistics today; it is stated mathematically as 
+\begin{equation}\label{eq:1}
+    P(A|B)=\frac{P(B|A)P(A)}{P(B)},
+\end{equation}
+where $A,B$ are events such that $P(B)\neq 0$. Here, $P(A|B),P(B|A)$ are conditional probabilities, where $A$ and $B$ depend on the occurence of the other. Now, without going any further into the extensions of Bayes' Theorem, it is noted that Equation (\ref{eq:1}) was used in order to compute the distribution of an unknown probability parameter $\theta$ of a binomial distribution. This is the main contrast from that of the frequentist's perspective; the parameters of a distribution are unknown, and the most likely distribution for those parameters that describe the data are to be found. Thus, Equation (\ref{eq:1}) is reexpressed as
+\begin{equation}\label{eq:2}
+    P(\theta|D)=\frac{P(D|\theta)P(\theta)}{P(D)}.
+\end{equation}
+Equation (\ref{eq:2}) assumes the parameters of a distribution depend on the data, $P(\theta|D)$ (called the posterior), and this probability is informed by the likelihood $P(D|\theta)$, given a prior assumption, $P(\theta)$, about the parameters before any new data ($P(D)$) is observed.
+\subsection{Metropolis-Hastings Algorithm}
+
+\section{Implementation of MCMC to Audio}
+\section{Results}
+\section{Discussion}
+
+
+
+
+\printbibliography
+\end{document}
