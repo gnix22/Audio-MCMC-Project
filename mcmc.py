@@ -56,42 +56,72 @@ def metropolis_hastings(data, initial_params, n_samples):
             rejected.append(theta_new)
     print(f"Acceptance rate: {len(accepted) / n_samples:.2%}\n")
     return np.array(accepted), np.array(rejected)
-accepted, rejected = metropolis_hastings(data, [np.mean(data), np.mean(np.abs(data - np.mean(data)))], 10000)
+accepted, rejected = metropolis_hastings(data, [np.mean(data), np.mean(np.abs(data - np.mean(data)))], 50000)
 accepted_mu_samples = accepted[:,0]
 accepted_b_samples = accepted[:,1]
 rejected_mu_samples = rejected[:,0]
 rejected_b_samples = rejected[:,1]
+
+print(f"Estimated mu: {accepted_mu_samples.mean():.4f} ± {accepted_mu_samples.std():.4f}")
+
+print(f"Estimated b:  {accepted_b_samples.mean():.4f} ± {accepted_b_samples.std():.4f}\n")
 
 #plots of acceptance convergence
 #print(f"Estimated mu: {accepted_mu_samples.mean():.4f} ± {accepted_mu_samples.std():.4f}")
 #print(f"Estimated b:  {accepted_b_samples.mean():.4f} ± {accepted_b_samples.std():.4f}\n")
 #print(f"shape of accepted_mu: {len(accepted_mu_samples)}\n")
 #print(f"shape of rejected_mu: {len(rejected_mu_samples)}\n")
+
 # plot accepted/rejected samples for each parameter
+#fig, ax = plt.subplots(2,2)
+
+#ax[0,0].plot(rejected_mu_samples[0:50], rejected_b_samples[0:50], 'rx', label='Rejected', alpha=0.5)
+#ax[0,0].plot(accepted_mu_samples[0:50], accepted_b_samples[0:50], 'b-', label='Path', alpha=0.3)
+#ax[0,0].plot(accepted_mu_samples[0:50], accepted_b_samples[0:50], 'b.', label='Accepted', alpha=0.5)
+#
+#ax[0,1].plot(rejected_mu_samples, rejected_b_samples, 'rx', label='Rejected', alpha=0.5)
+#ax[0,1].plot(accepted_mu_samples, accepted_b_samples, 'b-', label='Path', alpha=0.3)
+#ax[0,1].plot(accepted_mu_samples, accepted_b_samples, 'b.', label='Accepted', alpha=0.5)
+#
+#ax[1,0].plot(accepted_mu_samples)
+#ax[1,0].set_title("Trace for mu")
+#ax[1,0].set_xlabel("Iteration")
+#ax[1,0].set_ylabel("mu")
+#
+#ax[1,1].plot(accepted_b_samples)
+#ax[1,1].set_title("Trace for b")
+#ax[1,1].set_xlabel("Iteration")
+#ax[1,1].set_ylabel("b")
+#
+#ax[0,0].set_xlabel("mu")
+#ax[0,0].set_ylabel("b")
+#ax[0,0].set_title("MCMC sampling for mu, b with Metropolis-Hastings. First 50 samples are shown.")
+#ax[0,0].grid()
+#ax[0,0].legend()
+#
+#ax[0,1].set_xlabel("mu")
+#ax[0,1].set_ylabel("b")
+#ax[0,1].set_title("MCMC sampling for mu, b with Metropolis-Hastings. All samples are shown.")
+#ax[0,1].grid()
+#ax[0,1].legend()
+#
+#
+#fig.tight_layout()
+mu=accepted_mu_samples.mean()
+b=accepted_b_samples.mean()
+print(mu, b)
+model = lambda t,mu,b:np.random.laplace(mu,b,t)
+t=np.arange(data.shape[0])
+observation_gen=model(t.shape[0],mu,b)
 fig = plt.figure(figsize=(10,10))
-ax = fig.add_subplot(1,2,1)
-ax2 = fig.add_subplot(1,2,2)
+ax = fig.add_subplot(1,1,1)
 
-# plot rejected as scatter in mu-b space, same as accepted
-ax.plot(rejected_mu_samples[0:50], rejected_b_samples[0:50], 'rx', label='Rejected', alpha=0.5)
-ax.plot(accepted_mu_samples[0:50], accepted_b_samples[0:50], 'b-', label='Path', alpha=0.3)
-ax.plot(accepted_mu_samples[0:50], accepted_b_samples[0:50], 'b.', label='Accepted', alpha=0.5)
 
-ax2.plot(rejected_mu_samples, rejected_b_samples, 'rx', label='Rejected', alpha=0.5)
-ax2.plot(accepted_mu_samples, accepted_b_samples, 'b-', label='Path', alpha=0.3)
-ax2.plot(accepted_mu_samples, accepted_b_samples, 'b.', label='Accepted', alpha=0.5)
 
-# swap these — mu is on x, b is on y
-ax.set_xlabel("mu")
-ax.set_ylabel("b")
-ax.set_title("MCMC sampling for mu, b with Metropolis-Hastings. First 50 samples are shown.")
-ax.grid()
+ax.hist(observation_gen, bins = 50, density=True,label="Predicted values")
+ax.hist(data, alpha=0.5,bins = 50, density=True, label="Original values")
+ax.set_xlabel("Count")
+ax.set_ylabel("Frequency")
+ax.set_title("Posterior distribution of predicitons")
 ax.legend()
-
-ax2.set_xlabel("mu")
-ax2.set_ylabel("b")
-ax2.set_title("MCMC sampling for mu, b with Metropolis-Hastings. All samples are shown.")
-ax2.grid()
-ax2.legend()
-fig.tight_layout()
 plt.show()

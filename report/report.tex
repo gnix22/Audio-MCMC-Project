@@ -10,6 +10,8 @@
 \usepackage{titlesec}
 \usepackage[backend=biber, style=numeric]{biblatex}
 \addbibresource{biblio.bib}
+\usepackage{algorithm2e}
+\usepackage{rotating}
 % Customize section font size
 \titleformat*{\section}{\fontsize{14pt}{16pt}\bfseries\selectfont}
 % Customize subsection font size
@@ -24,6 +26,7 @@
 \author{Garrett Nix}
 \date{\today}
 \begin{document}
+\RestyleAlgo{ruled}
 \maketitle
 \vspace{-2em}  % Remove space after title block
 \section{Introduction}
@@ -38,13 +41,104 @@ where $A,B$ are events such that $P(B)\neq 0$. Here, $P(A|B),P(B|A)$ are conditi
 \begin{equation}\label{eq:2}
     P(\theta|D)=\frac{P(D|\theta)P(\theta)}{P(D)}.
 \end{equation}
-Equation (\ref{eq:2}) assumes the parameters of a distribution depend on the data, $P(\theta|D)$ (called the posterior), and this probability is informed by the likelihood $P(D|\theta)$, given a prior assumption, $P(\theta)$, about the parameters before any new data ($P(D)$) is observed.
+Equation (\ref{eq:2}) assumes the parameters of a distribution depend on the data, $P(\theta|D)$ (called the posterior), and this probability is informed by the likelihood $P(D|\theta)$, given a prior assumption, $P(\theta)$, about the parameters before any new data ($P(D)$) is observed. In other words, MCMC allows for a sampling from any distribution that can not be directly sampled, in essence, sampling from a prior distribution over $\theta$.
 \subsection{Metropolis-Hastings Algorithm}
+Now, there are many ways of implementing MCMC; a particular implementation is that of the Metropolis-Hastings algorithm. Essentially, what happens is that given a proposal distribution, denoted $Q(\theta'|\theta)$, helps to draw samples from a posterior distribution $P(\theta|D)$ that is refractory. This works by using $Q$ to perform a random walk within the parameter space, where the transition into a new state is accepted or rejected based on how likely the sample is to be observed. This process is Markovian in nature, hence the ``Markov Chain'' in MCMC. The likelihood of each new observation is derived from a function $f$, thus $f$ must be proportional to $P(\theta|D)$. The random walk of $Q$ is formed by a sample drawn from typically from a symmetric distribution proposed by new parameter $\theta'$, given the current parameter $\theta$. That is, $Q(\theta'|\theta)$ typically follows some distribution of symmetry such as $Q(\theta'|\theta)=\mathcal{N}(\mu,\theta)$. To decide the acceptance of $\theta'$, the ratio 
+\begin{eqnarray*}
+    \frac{P(\theta'|D)}{P(\theta|D)}&=&\frac{P(D|\theta')P(\theta')}{P(D|\theta)P(\theta)} (\text{Bayes' Formula})\\
+                                    &=&\frac{\prod_{i}^{n}f(d_i|\Theta=\theta')P(\theta')}{\prod_{i}^{n}f(d_i|\Theta=\theta)P(\theta)}
+\end{eqnarray*}
+which leads to the probability that 
+\begin{equation}
+    P(\text{accept})=
+    \begin{cases}
+        \frac{\prod_{i}^{n}f(d_i|\Theta=\theta')P(\theta')}{\prod_{i}^{n}f(d_i|\Theta=\theta)P(\theta)}, \prod_{i}^{n}f(d_i|\Theta=\theta)P(\theta) > \prod_{i}^{n}f(d_i|\Theta=\theta')P(\theta')\\
+        1, \prod_{i}^{n}f(d_i|\Theta=\theta)P(\theta) \leq \prod_{i}^{n}f(d_i|\Theta=\theta')P(\theta').
+    \end{cases}
+\end{equation}
+What Equation (2) states is that if $\theta'$ is a strong proposal for the next state, it is certain that $\theta'$ is chosen. If it is strictly lesser to the current $\theta$, it may still be accepted, however, with decreasing probability. Algorithm \ref{alg:1} provides a psuedocode representation of how this may be implemented \cite{Book_MonteCarlo_2004_Robert_MonteCarloStatisticalMethods}.
 
+\begin{algorithm}[H]\label{alg:1}
+\caption{Metropolis-Hastings Algorithm}
+Initialise a state $\theta_0$;
+Set $t=0$;
+
+\For{$t$ \KwTo $N$}{
+    1. Sample candidate $\theta'$ from proposal distribution $Q(\theta'|\theta_{t})$\;
+    
+    2. Calculate the acceptance ratio: 
+    \[
+    \alpha = \min\left(1, \frac{P(\theta') Q(\theta_t|\theta')}{P(\theta_{t}) Q(\theta'|\theta_{t})}\right);
+    \]\
+    
+    3. Generate $u \sim \text{Uniform}(0, 1)$\;
+    
+    \If{$u \le \alpha$}{
+        Accept the proposal: $\theta_{t+1} \leftarrow \theta'$\;
+    }
+    \Else{
+        Reject the proposal: $\theta_{t+1} \leftarrow \theta_{t}$\;
+    }
+    Increment $t=t+1$;
+}
+\end{algorithm}
 \section{Implementation of MCMC to Audio}
-\section{Results}
-\section{Discussion}
+The data used in implementation in this study comes from a personal favorite musical artist, that is an artist by the name of Porter Robinson. A sample of piece \textit{Divinity} is taken for study. The sample is at a duration 0.065s at 11.25khz. Figure 1 provides a visual representation of the data used. 
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{img/audio-waveform-hist-dual-plot.pdf}
+    \caption{Dual plot of the audio waveform and distribution of amplitudes}
+    \label{fig:1}
+\end{figure}
 
+As audio generally tends to be classified as sparse data, where the sample representation are zero \cite{Plumbleyetal2010}, a distribution with the capacity to model such representations is needed. Other studies have found that a Laplace distribution can be used in order to achieve this \cite{Sun2025-va}. The Laplace PDF is defined by 
+\begin{equation}
+    f(x|\mu,b)=\frac{1}{2b}e^{-\frac{|x-\mu|}{b}},
+\end{equation}
+where $\mu \in(-\infty,\infty),b \in [0,\infty)$ are location and scale parmeters, respectively. Using this as the prior distribution of the MCMC, the likelihood function is defined as 
+\begin{equation}\label{eq:lik}
+    L(\mu,b|x)=\prod_{i=1}^{n}\frac{1}{2b}e^{-\frac{|x_i-\mu|}{b}}=\left(\frac{1}{2b}\right)^{n}\exp \left(-\frac{1}{b}\sum_{i=1}^{n}|x_i-\mu|\right).
+\end{equation}
+Taking the logarithm of Equation \ref{eq:lik}, obtained is
+\begin{equation}
+    \ell(\mu,b|x)=-n\ln(2b)-\frac{1}{b}\sum_{i=1}^{n}|x_i-\mu|.
+\end{equation}
+This posterior is then used in conjunction with Algorithm \ref{alg:1}, in order to sample the distribution of parameters for the data. Further implementation for choice of prior and proposal distribution can be found on the Github Repository associated with this study.
+\section{Results}
+The MCMC is observed with $10,000$, $30,000$, and $50,000$ iterations. Table \ref{tab:1} provides a comparison of a single pass of each iterations acceptance rate with the parameter estimates. Figure \ref{fig:2} shows four plots for the pass of 50k iterations, observing the convergence of the first 50 samples, the convergence of all samples taken, as well as the traces for $\mu,b$, respectively. Figure \ref{fig:3} shows a comparison of the distribution of samples from the mean estimates of the paramters for the posterior distribution overlayed on top of the observed data.
+
+\begin{table}
+    \label{tab:1}
+    \centering
+    \begin{tabular}{ |c|c|c|c| } 
+     \hline
+     Iterations & AR & $\hat{\mu}$ & $\hat{b}$\\ 
+     \hline
+     10k & 28.22\% & $0.0020\pm0.0028$ & $0.1337\pm0.0045$\\ 
+     \hline
+     30k & 28.33\% & $0.0020\pm0.0027$ & $0.1341\pm0.0049$\\ 
+     \hline
+     50k & 28.24\% & $0.0020\pm0.0028$ & $0.1344\pm0.0051$\\
+     \hline
+    \end{tabular}
+    \caption{Acceptance rate and parameter estimates for $\mu,b$}
+\end{table}
+
+\begin{sidewaysfigure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{img/quadplot.pdf}
+    \caption{Convergence of parameters, traces of $\mu,b$}
+    \label{fig:2}
+\end{sidewaysfigure}
+
+\begin{sidewaysfigure}[htbp]
+    \centering
+    \includegraphics[width=0.65\textwidth]{img/Hist.pdf}
+    \caption{Histogram of original samples and distribution of posterior}
+    \label{fig:3}
+\end{sidewaysfigure}
+\section{Discussion}
+As Table \ref{tab:1} shows the acceptance rate 
 
 
 
